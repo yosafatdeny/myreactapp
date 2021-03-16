@@ -44,10 +44,27 @@ pipeline{
         script{
           docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-yosafatdeny'){
             app.push("${DOCKER_TAG}")
+            app.push("latest")
           }
         }
       }
     }
+    stage ('cleanup images'){
+      steps{
+        sh 'docker rmi yosafatdeny/myreactapp'
+      }
+    }
+    stage ('deploy app'){
+      steps{
+        sh "chmod +x changeTag.sh"
+        sh "./changeTag.sh ${DOCKER_TAG}"
+        withKubeConfig([credentialsId: 'kubeconfig-clusterjcde', serverUrl: 'https://34.101.68.72']){
+          sh 'kubectl apply -f deployment-config.k8s.yaml'
+        }
+      }
+    }
+
+
   }
 }
 
